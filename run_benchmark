@@ -1,0 +1,118 @@
+#!/usr/bin/env python3
+
+import datetime
+import os
+import subprocess
+import sys
+
+os.chdir(os.path.dirname(sys.argv[0]))
+
+TOOLS = {
+    "sophia":           "./b_sophia/run     {task} '{filename}'",
+    "sophia_lg":        "./b_sophia/run     {task} '{filename}' light",
+    "sophia_tree":      "./b_sophia/run     {task} '{filename}' tree",
+    "sophia_full":      "./b_sophia/run     {task} '{filename}' full",
+    "sophia_array":     "./b_sophia/run     {task} '{filename}' array",
+    "sophia_A":         "./b_sophia/run     {task} '{filename}' A_fast",
+    "sophia_lg_A":      "./b_sophia/run     {task} '{filename}' A_light",
+    "sophia_tree_A":    "./b_sophia/run     {task} '{filename}' A_tree",
+    "sophia_full_A":    "./b_sophia/run     {task} '{filename}' A_full",
+
+    "sophia_js":        "./b_nodejs/sophia_js.js {task} '{filename}' Fast",
+    "sophia_js_lg":     "./b_nodejs/sophia_js.js {task} '{filename}' Light",
+    "sophia_js_tree":   "./b_nodejs/sophia_js.js {task} '{filename}' Tree",
+    "sophia_js_full":   "./b_nodejs/sophia_js.js {task} '{filename}' Full",
+    "sophia_js_array":  "./b_nodejs/sophia_js.js {task} '{filename}' Array",
+    "sophia_js_graphy": "./b_nodejs/sophia_js.js {task} '{filename}' Graphy",
+    "sophia_js_ss":     "./b_nodejs/sophia_js.js {task} '{filename}' Sortable",
+    "sophia_js_A":      "./b_nodejs/sophia_js.js {task} '{filename}' FastA",
+    "sophia_js_A_lg":   "./b_nodejs/sophia_js.js {task} '{filename}' LightA",
+    "sophia_js_A_tree": "./b_nodejs/sophia_js.js {task} '{filename}' TreeA",
+    "sophia_js_A_full": "./b_nodejs/sophia_js.js {task} '{filename}' FullA",
+
+    "rust_wrapped":     "./b_nodejs/sophia_js.js {task} '{filename}' Wrapped",
+}
+
+FILES = [
+    ("./data/persondata_en_10k.ttl",    10_000),
+    ("./data/persondata_en_20k.ttl",    20_000),
+    ("./data/persondata_en_40k.ttl",    40_000),
+    ("./data/persondata_en_80k.ttl",    80_000),
+    ("./data/persondata_en_100k.ttl",  100_000),
+    ("./data/persondata_en_1M.ttl",  1_000_000),
+    # ("./data/persondata_en.ttl",    10_310_000),
+]
+
+LIMITS = {
+    ("librdf", "query"):   100_000,
+    ("n3js",   "query"): 1_000_000,
+    ("python", "query"): 1_000_000,
+}
+
+HEADERS = {
+    "parse": "t_parse",
+    "query": "t_load,m_graph,m_graph_end,t_first,t_rest,t_second,t_second_rest",
+    "query2": "t_load,m_graph,m_graph_end,t_first,t_rest,t_second,t_second_rest",
+    "query3": "t_load,m_graph,m_graph_end,t_first,t_rest,t_second,t_second_rest",
+    "query4": "t_load,m_graph,m_graph_end,t_first,t_rest,t_second,t_second_rest",
+}
+
+def main():
+    if len(sys.argv) != 3:
+        print(sys.argv)
+        print("usage: {} <task> <tool>".format(sys.argv[0]), file=sys.stderr)
+        print("  available tasks: {}".format(
+            ",".join(HEADERS)
+        ))
+        print("  available tools: {}".format(
+            ",".join(TOOLS)
+        ))
+        exit(1)
+    else:
+        args = sys.argv[1:]
+    task = args[0]
+    tool = args[1]
+    nb_iter = int(os.getenv("N", "4"))
+
+    if task not in HEADERS:
+        print(task)
+        print("available tasks: " + ", ".join(HEADERS), file=sys.stderr)
+        exit(2)
+    if tool not in TOOLS:
+        print("------" + tool)
+        print("available tools: " + ", ".join(TOOLS), file=sys.stderr)
+        exit(3)
+
+
+    csv = "csv/{}-{}-{}.csv".format(task, tool,
+        str(datetime.datetime.now())[:19].replace(' ', '-').replace(':', '-'),
+    )
+    with open(csv, 'w') as f:
+        try:
+            print("WRITING", csv, file=sys.stderr)
+            f.write("tool,size,{}\n".format(HEADERS[task]))
+            f.flush()
+
+            for filename, size in FILES:
+                for _ in range(nb_iter):
+                    cmd = TOOLS[tool]
+                    if size > LIMITS.get((tool, task), 999_999_999_999):
+                        continue
+                    cmd = cmd.format(task=task, filename=filename)
+                    res = subprocess.run(cmd, shell=True, check=True, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+                    f.write("{},{},{}".format(tool, size, res.stdout.decode('utf8')))
+                    f.flush()
+                    print("DONE", tool, filename, file=sys.stderr)
+        except KeyboardInterrupt:
+            sys.stdout.write("\r") # clear the '^C' that appears
+
+    csv_link = "csv/results_{}-{}.csv".format(task, tool)
+    try:
+        os.unlink(csv_link)
+    except FileNotFoundError:
+        pass
+    os.link(csv, csv_link)
+    print("LINKED", csv_link)
+    
+
+main()
