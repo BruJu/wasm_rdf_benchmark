@@ -16,6 +16,8 @@ array_programs=(
     #sophia_js_graphy
     # Wrapped
     rust_wrapped
+    # Stores
+    # store_n3  store_wasm
 )
 
 # array_programs=( sophia_js sophia_array sophia_js_full sophia_js_lg sophia_js_tree sophia_js_A sophia_js_A_full sophia_js_A_lg sophia_js_A_tree sophia_js_array sophia_js_graphy )
@@ -24,7 +26,7 @@ array_programs=(
 
 # Wrapped Dataset testing
 # sophia sophia_js sophia_tree sophia_js_tree sophia_js_graphy
-array_programs=( rust_wrapped )
+#array_programs=( rust_wrapped )
 
 for i in "${array[@]}"
 do

@@ -31,6 +31,9 @@ TOOLS = {
     "sophia_js_A_full": "./b_nodejs/sophia_js.js {task} '{filename}' FullA",
 
     "rust_wrapped":     "./b_nodejs/sophia_js.js {task} '{filename}' Wrapped",
+
+    "store_n3":         "./b_nodejs/store.js {task} '{filename}' n3",
+    "store_wasm":       "./b_nodejs/store.js {task} '{filename}' Wrapped",
 }
 
 FILES = [

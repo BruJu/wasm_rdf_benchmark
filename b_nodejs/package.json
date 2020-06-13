@@ -1,5 +1,6 @@
 {
     "dependencies": {
+        "@graphy/content.ttl.read": "^4.2.1",
         "@graphy/memory.dataset.fast": "^4.2.1",
         "n3": "^1.0.0-beta.1"
     }
