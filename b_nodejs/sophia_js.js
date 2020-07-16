@@ -1,15 +1,17 @@
 #!/usr/bin/env node
+"use strict"
 
 // We use n3 parser to be fair between every implementation
 const n3 = require("n3");
 // https://github.com/BruJu/Portable-Reasoning-in-Web-Assembly
-const sophia_js = require('../../Portable-Reasoning-in-Web-Assembly/sophia-wasm/pkg/sophia_wasm.js')
+const sophia_js = require('../../wasmify_sophia/sophia-wasm/pkg/sophia_wasm.js');
+const sophia_js_wrapped = require('../../wasmify_sophia/sophia-wasm/pkg/wrapper.js');
 // https://github.com/BruJu/WasmTreeDataset
-const wrapped_ds = require('../../Portable-Reasoning-in-Web-Assembly/sophia-wasm/pkg/wrappedtree.js')
+const wasm_tree = require('../../WasmTreeDataset/wasm-tree-frontend');
 // Graphy
 const graphy_dataset = require("@graphy/memory.dataset.fast")
 
-const { task, filename, stream, get_vmsize, performance } = require("./common.js")
+const { task, _, stream, get_vmsize, performance } = require("./common.js")
 
 // Run the required task
 const do_task = {
@@ -19,77 +21,55 @@ const do_task = {
     'query4': () => query_nt(4)
 }[task];
 
+
+const datasetInstancier = {
+    "fast"      : () => new sophia_js.FastDataset(),
+    "light"     : () => new sophia_js.LightDataset(),
+    "tree"      : () => new sophia_js.TreedDataset(),
+    "tree_anti" : () => new sophia_js.AntiTreedDataset(),
+    "full"      : () => new sophia_js.FullDataset(),
+    "array"     : () => new sophia_js.ArrayDataset(),
+    "fast_array": () => new sophia_js.FastDatasetToA(),
+    "tree_array": () => new sophia_js.TreedDatasetToA(),
+    "full_array": () => new sophia_js.FullDatasetToA(),
+    "wrap_tree" : () => new sophia_js_wrapped.SophiaDatasetWrapper(new sophia_js.FastDataset()),
+    "wasm_tree" : () => new wasm_tree.Dataset(),
+    "graphy"    : () => graphy_dataset()
+};
+
 do_task();
 
+const LOOP_TO_COUNT = true;
 
 function query_nt(query_num) {
-    let t_load, m_graph, t_first, t_rest;
-    let start, duration;
-    const format = "N-Triples";    
-    let parser = new n3.Parser({ format: format });
+    let parser = new n3.Parser({ format: "N-Triples" });
     const mem0 = get_vmsize();
-    start = performance.now();
+    let start = performance.now();
 
-    let isIterable = false;
-    let store;
-    switch (process.argv[4]) {
-        case "Full":
-            store = new sophia_js.FullDataset();
-            break;
-        case "Tree":
-            store = new sophia_js.TreeDataset();
-            break;
-        case "Fast":
-            store = new sophia_js.FastDataset();
-            break;
-        case "Light":
-            store = new sophia_js.LightDataset();
-            break;
-        case "FullA":
-            store = new sophia_js.FullDatasetToA();
-            break;
-        case "TreeA":
-            store = new sophia_js.TreeDatasetToA();
-            break;
-        case "FastA":
-            store = new sophia_js.FastDatasetToA();
-            break;
-        case "LightA":
-            store = new sophia_js.LightDatasetToA();
-            break;
-        case "Array":
-            store = new sophia_js.ArrayDataset();
-            break;
-        case "Sortable":
-            store = new sophia_js.SDataset();
-            break;
-        case "Graphy":
-            store = graphy_dataset();
-            isIterable = true;
-            break;
-        case "Wrapped":
-            store = new wrapped_ds();
-            isIterable = true;
-            break;
-        default:
-            console.error("Unknown dataset " + dataset);
-            process.exit(7);
+    let dataset = datasetInstancier[process.argv[4]];
+
+    if (dataset === undefined) {
+        console.error("Unknown dataset " + process.argv[4]);
+        process.exit(7);
     }
 
-    parser.parse(stream, (error, quad, prefixes) => {
+    dataset = dataset();
+
+    let isIterable = dataset[Symbol.iterator] !== undefined;
+
+    parser.parse(stream, (error, quad, _) => {
         if (error) {
             console.error(error);
             process.exit(2);
         }
-        
-        
+
         if (quad) {
-            store.add(quad);
+            dataset.add(quad);
         } else {
-            duration = performance.now() - start;
+            let duration = performance.now() - start;
             const mem1 = get_vmsize();
-            t_load = duration/1000;
-            m_graph = mem1-mem0
+            let t_load = duration/1000;
+            let m_graph = mem1-mem0
 
             let subject, predicate, object, graph;
             if (query_num == 1 || query_num == 3) {
@@ -110,36 +90,52 @@ function query_nt(query_num) {
 
             let bench = function() {
                 let start = performance.now();
-                let filtered_dataset = store.match(subject, predicate, object, graph);
+                let filtered_dataset = dataset.match(subject, predicate, object, graph);
 
                 duration = performance.now() - start;
                 let t_first = duration/1000;
+
+                let loopOn;
+                if (isIterable) {
+                    loopOn = filtered_dataset;
+                } else {
+                    loopOn = {
+                        base: filtered_dataset,
+                        [Symbol.iterator]() {
+                            return this.base.getIterator();
+                        }
+                    };
+                }
+
                 start = performance.now();
 
-
                 let counter = 0;
-                if (true) {
-                    if (!isIterable) {
-                        filtered_dataset.forEach(quad => { counter += 1; });
-                    } else {
-                        for (q of filtered_dataset) {
-                            counter += 1;
-                        }
+                if (LOOP_TO_COUNT) {
+                    for (let _quad of loopOn) {
+                        counter += 1;
                     }
                 } else {
                     counter = filtered_dataset.size;
                 }
 
                 duration = performance.now() - start;
-                t_last = duration/1000;
+                let t_last = duration/1000;
 
-                return [t_first, t_last, counter, filtered_dataset];
+                if (filtered_dataset.free !== undefined) {
+                    filtered_dataset.free();
+                }
+
+                return [t_first, t_last, counter];
             }
             
             let firstData = bench();
             let secondData = bench();
             // console.error(sophia_js.__wasm.memory.buffer);
             const mem2 = get_vmsize() - mem0;
+
+            if (dataset.free !== undefined) {
+                dataset.free();
+            }
 
             console.error(`retrieved: ${secondData[2]}`);
             console.log(`${t_load},${m_graph},${mem2},${firstData[0]},${firstData[1]},${secondData[0]},${secondData[1]}`);

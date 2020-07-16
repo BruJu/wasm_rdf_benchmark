@@ -18,8 +18,6 @@ This repository purpose is to benchmark the performances of :
 - Results will be written in the csv folder
 
 
-TODO : fix the Rust native benchmark (quick and dirty solution of implementing the Treed and coe Datasets in local Sophia clone )
-
 TODO : resorting only on `./run_benchmark` instead of `run_all.sh` to call it is probably better
 
 

@@ -7,33 +7,26 @@ import sys
 
 os.chdir(os.path.dirname(sys.argv[0]))
 
+KINDS = {
+    "fast"      : [ "rust", "rdfjsdataset"               ],
+    "light"     : [ "rust", "rdfjsdataset"               ],
+    "tree"      : [ "rust", "rdfjsdataset"               ],
+    "tree_anti" : [ "rust", "rdfjsdataset"               ],
+    "full"      : [ "rust", "rdfjsdataset"               ],
+    "array"     : [ "rust", "rdfjsdataset"               ],
+    "fast_array": [ "rust", "rdfjsdataset"               ],
+    "tree_array": [ "rust", "rdfjsdataset"               ],
+    "full_array": [ "rust", "rdfjsdataset"               ],
+    "wrap_tree" : [         "rdfjsdataset"               ],
+    "wasm_tree" : [         "rdfjsdataset", "rdfjsstore" ],
+    "graphy"    : [         "rdfjsdataset"               ],
+    "n3"        : [                         "rdfjsstore" ]
+}
+
 TOOLS = {
-    "sophia":           "./b_sophia/run     {task} '{filename}'",
-    "sophia_lg":        "./b_sophia/run     {task} '{filename}' light",
-    "sophia_tree":      "./b_sophia/run     {task} '{filename}' tree",
-    "sophia_full":      "./b_sophia/run     {task} '{filename}' full",
-    "sophia_array":     "./b_sophia/run     {task} '{filename}' array",
-    "sophia_A":         "./b_sophia/run     {task} '{filename}' A_fast",
-    "sophia_lg_A":      "./b_sophia/run     {task} '{filename}' A_light",
-    "sophia_tree_A":    "./b_sophia/run     {task} '{filename}' A_tree",
-    "sophia_full_A":    "./b_sophia/run     {task} '{filename}' A_full",
-
-    "sophia_js":        "./b_nodejs/sophia_js.js {task} '{filename}' Fast",
-    "sophia_js_lg":     "./b_nodejs/sophia_js.js {task} '{filename}' Light",
-    "sophia_js_tree":   "./b_nodejs/sophia_js.js {task} '{filename}' Tree",
-    "sophia_js_full":   "./b_nodejs/sophia_js.js {task} '{filename}' Full",
-    "sophia_js_array":  "./b_nodejs/sophia_js.js {task} '{filename}' Array",
-    "sophia_js_graphy": "./b_nodejs/sophia_js.js {task} '{filename}' Graphy",
-    "sophia_js_ss":     "./b_nodejs/sophia_js.js {task} '{filename}' Sortable",
-    "sophia_js_A":      "./b_nodejs/sophia_js.js {task} '{filename}' FastA",
-    "sophia_js_A_lg":   "./b_nodejs/sophia_js.js {task} '{filename}' LightA",
-    "sophia_js_A_tree": "./b_nodejs/sophia_js.js {task} '{filename}' TreeA",
-    "sophia_js_A_full": "./b_nodejs/sophia_js.js {task} '{filename}' FullA",
-
-    "rust_wrapped":     "./b_nodejs/sophia_js.js {task} '{filename}' Wrapped",
-
-    "store_n3":         "./b_nodejs/store.js {task} '{filename}' n3",
-    "store_wasm":       "./b_nodejs/store.js {task} '{filename}' Wrapped",
+    "rust"        : "./b_sophia/target/release/wasm_rdf_benchmark {task} '{filename}' {kind}",
+    "rdfjsdataset": "./b_nodejs/sophia_js.js                      {task} '{filename}' {kind}",
+    "rdfjsstore"  : "./b_nodejs/store.js                          {task} '{filename}' {kind}"
 }
 
 FILES = [
@@ -46,76 +39,71 @@ FILES = [
     # ("./data/persondata_en.ttl",    10_310_000),
 ]
 
-LIMITS = {
-    ("librdf", "query"):   100_000,
-    ("n3js",   "query"): 1_000_000,
-    ("python", "query"): 1_000_000,
-}
+HEADER = "t_load,m_graph,m_graph_end,t_first,t_rest,t_second,t_second_rest"
 
-HEADERS = {
-    "parse": "t_parse",
-    "query": "t_load,m_graph,m_graph_end,t_first,t_rest,t_second,t_second_rest",
-    "query2": "t_load,m_graph,m_graph_end,t_first,t_rest,t_second,t_second_rest",
-    "query3": "t_load,m_graph,m_graph_end,t_first,t_rest,t_second,t_second_rest",
-    "query4": "t_load,m_graph,m_graph_end,t_first,t_rest,t_second,t_second_rest",
-}
+QUERIES = ["query", "query2", "query3", "query4"]
 
 def main():
-    if len(sys.argv) != 3:
+    if len(sys.argv) != 4:
         print(sys.argv)
-        print("usage: {} <task> <tool>".format(sys.argv[0]), file=sys.stderr)
+        print("usage: {} <task> <tool> <kind>".format(sys.argv[0]), file=sys.stderr)
         print("  available tasks: {}".format(
-            ",".join(HEADERS)
+            ",".join(QUERIES)
         ))
         print("  available tools: {}".format(
             ",".join(TOOLS)
         ))
+        print("  available datasets: {}".format(
+            ",".join(KINDS)
+        ))
         exit(1)
-    else:
-        args = sys.argv[1:]
+        
+    args = sys.argv[1:]
     task = args[0]
     tool = args[1]
+    kind = args[2]
+
+    csv = "csv/bench_{}.csv".format(
+        str(datetime.datetime.now())[:19].replace(' ', '-').replace(':', '-'),
+    )
+
     nb_iter = int(os.getenv("N", "4"))
 
-    if task not in HEADERS:
+    benchmark(task, tool, kind, nb_iter, csv)
+
+
+def benchmark(task, tool, kind, nb_iter, csv):
+    if task not in QUERIES:
         print(task)
-        print("available tasks: " + ", ".join(HEADERS), file=sys.stderr)
+        print("available tasks: " + ", ".join(QUERIES), file=sys.stderr)
         exit(2)
     if tool not in TOOLS:
         print("------" + tool)
         print("available tools: " + ", ".join(TOOLS), file=sys.stderr)
         exit(3)
+    if kind not in KINDS:
+        print("Invalid kind: " + kind)
+        print("available kinds: " + ", ".join(KINDS), file=sys.stderr)
+        exit(8)
 
+    file_exists = os.path.isfile(csv)
 
-    csv = "csv/{}-{}-{}.csv".format(task, tool,
-        str(datetime.datetime.now())[:19].replace(' ', '-').replace(':', '-'),
-    )
-    with open(csv, 'w') as f:
+    with open(csv, 'w+') as f:
         try:
             print("WRITING", csv, file=sys.stderr)
-            f.write("tool,size,{}\n".format(HEADERS[task]))
-            f.flush()
+            if not file_exists:
+                f.write("tool,size,{},{}\n".format(kind, HEADER))
+                f.flush()
 
             for filename, size in FILES:
                 for _ in range(nb_iter):
                     cmd = TOOLS[tool]
-                    if size > LIMITS.get((tool, task), 999_999_999_999):
-                        continue
-                    cmd = cmd.format(task=task, filename=filename)
+                    cmd = cmd.format(task=task, filename=filename, kind=kind)
                     res = subprocess.run(cmd, shell=True, check=True, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
-                    f.write("{},{},{}".format(tool, size, res.stdout.decode('utf8')))
+                    f.write("{},{},{},{}".format(tool, kind, size, res.stdout.decode('utf8')))
                     f.flush()
                     print("DONE", tool, filename, file=sys.stderr)
         except KeyboardInterrupt:
             sys.stdout.write("\r") # clear the '^C' that appears
-
-    csv_link = "csv/results_{}-{}.csv".format(task, tool)
-    try:
-        os.unlink(csv_link)
-    except FileNotFoundError:
-        pass
-    os.link(csv, csv_link)
-    print("LINKED", csv_link)
-    
 
 main()
