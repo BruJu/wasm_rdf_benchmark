@@ -32,7 +32,7 @@ const datasetInstancier = {
     "fast_array": () => new sophia_js.FastDatasetToA(),
     "tree_array": () => new sophia_js.TreedDatasetToA(),
     "full_array": () => new sophia_js.FullDatasetToA(),
-    "wrap_tree" : () => new sophia_js_wrapped.SophiaDatasetWrapper(new sophia_js.FastDataset()),
+    "wrap_fast" : () => new sophia_js_wrapped.SophiaDatasetWrapper(new sophia_js.FastDataset()),
     "wasm_tree" : () => new wasm_tree.Dataset(),
     "graphy"    : () => graphy_dataset()
 };

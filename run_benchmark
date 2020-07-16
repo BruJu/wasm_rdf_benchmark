@@ -2,6 +2,7 @@
 
 import datetime
 import os
+import random
 import subprocess
 import sys
 
@@ -17,7 +18,7 @@ KINDS = {
     "fast_array": [ "rust", "rdfjsdataset"               ],
     "tree_array": [ "rust", "rdfjsdataset"               ],
     "full_array": [ "rust", "rdfjsdataset"               ],
-    "wrap_tree" : [         "rdfjsdataset"               ],
+    "wrap_fast" : [         "rdfjsdataset"               ],
     "wasm_tree" : [         "rdfjsdataset", "rdfjsstore" ],
     "graphy"    : [         "rdfjsdataset"               ],
     "n3"        : [                         "rdfjsstore" ]
@@ -31,17 +32,22 @@ TOOLS = {
 
 FILES = [
     ("./data/persondata_en_10k.ttl",    10_000),
-    ("./data/persondata_en_20k.ttl",    20_000),
-    ("./data/persondata_en_40k.ttl",    40_000),
-    ("./data/persondata_en_80k.ttl",    80_000),
-    ("./data/persondata_en_100k.ttl",  100_000),
-    ("./data/persondata_en_1M.ttl",  1_000_000),
+    #("./data/persondata_en_20k.ttl",    20_000),
+    #("./data/persondata_en_40k.ttl",    40_000),
+    #("./data/persondata_en_80k.ttl",    80_000),
+    #("./data/persondata_en_100k.ttl",  100_000),
+    #("./data/persondata_en_1M.ttl",  1_000_000),
     # ("./data/persondata_en.ttl",    10_310_000),
 ]
 
 HEADER = "t_load,m_graph,m_graph_end,t_first,t_rest,t_second,t_second_rest"
 
-QUERIES = ["query", "query2", "query3", "query4"]
+QUERIES = {
+    "query": "PO",
+    "query2": "S",
+    "query3": "POG",
+    "query4": "SG"
+}
 
 def main():
     if len(sys.argv) != 4:
@@ -63,16 +69,12 @@ def main():
     tool = args[1]
     kind = args[2]
 
-    csv = "csv/bench_{}.csv".format(
-        str(datetime.datetime.now())[:19].replace(' ', '-').replace(':', '-'),
-    )
 
     nb_iter = int(os.getenv("N", "4"))
 
-    benchmark(task, tool, kind, nb_iter, csv)
+    benchmark(task, tool, kind, nb_iter)
 
-
-def benchmark(task, tool, kind, nb_iter, csv):
+def benchmark(task, tool, kind, nb_iter):
     if task not in QUERIES:
         print(task)
         print("available tasks: " + ", ".join(QUERIES), file=sys.stderr)
@@ -86,24 +88,116 @@ def benchmark(task, tool, kind, nb_iter, csv):
         print("available kinds: " + ", ".join(KINDS), file=sys.stderr)
         exit(8)
 
+
+    csv = "csv/bench_{}.csv".format(
+        str(datetime.datetime.now())[:19].replace(' ', '-').replace(':', '-'),
+    )
+
+    list_of_tasks = []
+
+    for filename, size in FILES:
+        for _ in range(nb_iter):
+            t = (task, tool, kind, filename, size)
+            list_of_tasks.append(t)
+    
+    run_benchmarks(list_of_tasks)
+
+
+def mass_benchmark():
+    NB_ITER = 2
+
+    list_of_tasks = []
+    for task in QUERIES:
+        for kind in KINDS:
+            for filename, size in FILES:
+                for _ in range(NB_ITER):
+                    if "rust" in KINDS[kind]:
+                        t = (task, "rust", kind, filename, size)
+                        list_of_tasks.append(t)
+                    
+                    if "rdfjsdataset" in KINDS[kind]:
+                        t = (task, "rdfjsdataset", kind, filename, size)
+                        list_of_tasks.append(t)
+
+    run_benchmarks(list_of_tasks)
+
+
+def exportation_dataset_impact(NB_ITER):
+    list_of_tasks = []
+    for task in QUERIES:
+        for kind in ["fast", "fast_array", "wrap_fast"]:
+            for filename, size in FILES:
+                for _ in range(NB_ITER):
+                    if "rust" in KINDS[kind]:
+                        t = (task, "rust", kind, filename, size)
+                        list_of_tasks.append(t)
+                    
+                    if "rdfjsdataset" in KINDS[kind]:
+                        t = (task, "rdfjsdataset", kind, filename, size)
+                        list_of_tasks.append(t)
+
+    run_benchmarks(list_of_tasks)
+
+
+def measure_javascript(NB_ITER):
+    list_of_tasks = []
+    for task in QUERIES:
+        for kind in ["fast", "fast_array", "tree", "wasm_tree", "array", "graphy"]:
+            for filename, size in FILES:
+                for _ in range(NB_ITER):
+                    if "rdfjsdataset" in KINDS[kind]:
+                        t = (task, "rdfjsdataset", kind, filename, size)
+                        list_of_tasks.append(t)
+
+    run_benchmarks(list_of_tasks)
+
+def measure_tree(NB_ITER):
+    list_of_tasks = []
+    for task in ["query"]:
+        for kind in ["tree", "tree_anti", "tree_array"]:
+            for filename, size in FILES:
+                for _ in range(NB_ITER):
+                    if "rust" in KINDS[kind]:
+                        t = (task, "rust", kind, filename, size)
+                        list_of_tasks.append(t)
+
+    run_benchmarks(list_of_tasks)
+
+
+def run_benchmarks(list_of_tasks):
+    random.shuffle(list_of_tasks)
+    csv = "csv/bench_{}.csv".format(
+        str(datetime.datetime.now())[:19].replace(' ', '-').replace(':', '-'),
+    )
+
     file_exists = os.path.isfile(csv)
 
     with open(csv, 'w+') as f:
         try:
             print("WRITING", csv, file=sys.stderr)
             if not file_exists:
-                f.write("tool,size,{},{}\n".format(kind, HEADER))
+                f.write("tool,dataset,pattern,size,{}\n".format(HEADER))
                 f.flush()
 
-            for filename, size in FILES:
-                for _ in range(nb_iter):
-                    cmd = TOOLS[tool]
-                    cmd = cmd.format(task=task, filename=filename, kind=kind)
-                    res = subprocess.run(cmd, shell=True, check=True, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
-                    f.write("{},{},{},{}".format(tool, kind, size, res.stdout.decode('utf8')))
-                    f.flush()
-                    print("DONE", tool, filename, file=sys.stderr)
+            for task, tool, kind, filename, size in list_of_tasks:
+                one_benchmark(f, task, tool, kind, filename, size)
+
         except KeyboardInterrupt:
             sys.stdout.write("\r") # clear the '^C' that appears
 
+def one_benchmark(f, task, tool, kind, filename, size):
+    cmd = TOOLS[tool]
+    cmd = cmd.format(task=task, filename=filename, kind=kind)
+    res = subprocess.run(cmd, shell=True, check=True, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+    f.write("{},{},{},{},{}".format(tool, kind, QUERIES[task], size, res.stdout.decode('utf8')))
+    f.flush()
+    print("DONE", task, tool, kind, filename, file=sys.stderr)
+
 main()
+
+
+#mass_benchmark()
+
+#measure_javascript(1)
+#measure_tree(1)
+#exportation_dataset_impact(1)
