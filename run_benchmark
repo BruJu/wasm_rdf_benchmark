@@ -32,21 +32,21 @@ TOOLS = {
 
 FILES = [
     ("./data/persondata_en_10k.ttl",    10_000),
-    #("./data/persondata_en_20k.ttl",    20_000),
-    #("./data/persondata_en_40k.ttl",    40_000),
-    #("./data/persondata_en_80k.ttl",    80_000),
-    #("./data/persondata_en_100k.ttl",  100_000),
-    #("./data/persondata_en_1M.ttl",  1_000_000),
+    ("./data/persondata_en_20k.ttl",    20_000),
+    ("./data/persondata_en_40k.ttl",    40_000),
+    ("./data/persondata_en_80k.ttl",    80_000),
+    ("./data/persondata_en_100k.ttl",  100_000),
+    ("./data/persondata_en_1M.ttl",  1_000_000),
     # ("./data/persondata_en.ttl",    10_310_000),
 ]
 
 HEADER = "t_load,m_graph,m_graph_end,t_first,t_rest,t_second,t_second_rest"
 
 QUERIES = {
-    "query": "PO",
-    "query2": "S",
-    "query3": "POG",
-    "query4": "SG"
+    "query": "POG",
+    "query2": "SG",
+    "query3": "PO",
+    "query4": "S"
 }
 
 def main():
@@ -193,11 +193,11 @@ def one_benchmark(f, task, tool, kind, filename, size):
     f.flush()
     print("DONE", task, tool, kind, filename, file=sys.stderr)
 
-main()
+#main()
 
 
 #mass_benchmark()
 
-#measure_javascript(1)
-#measure_tree(1)
-#exportation_dataset_impact(1)
+measure_javascript(20)
+#measure_tree(20)
+exportation_dataset_impact(20)

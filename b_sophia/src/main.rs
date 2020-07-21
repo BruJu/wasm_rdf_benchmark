@@ -78,16 +78,16 @@ fn request<G, FP, GP> (g: &G,
     let t_build_start = OffsetDateTime::now_utc();
     let mut results = match query_num {
         1 => g.quads_with_pog(&rdf::type_, &dbo_person, none),
-        3 => g.quads_with_po(&rdf::type_, &dbo_person),
         2 => g.quads_with_sg(&dbr_vincent, none),
+        3 => g.quads_with_po(&rdf::type_, &dbo_person),
         4 => g.quads_with_s(&dbr_vincent),
         _ => panic!("Unknown request")
     };
 
     let mut matched_dataset = match query_num {
         1 => generator(false,true ,true ,true ),
-        2 => generator(false,true ,true ,false),
-        3 => generator(true ,false,false,true ),
+        2 => generator(true ,false,false,true ),
+        3 => generator(false,true ,true ,false),
         4 => generator(true ,false,false,false),
         _ => panic!("Unknown request")
     };
