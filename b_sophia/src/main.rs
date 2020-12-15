@@ -10,7 +10,7 @@ use time::OffsetDateTime;
 
 extern crate bjdatasets;
 use bjdatasets::fulldataset::FullIndexDataset;
-use bjdatasets::treeddataset::TreedDataset;
+use bjdatasets::treedataset::TreeDataset;
 
 extern crate sophia;
 use sophia::dataset::*;
@@ -43,13 +43,13 @@ fn task_query<R> (f: R, variant: Option<&str>, query_num: usize) where
     match variant {
         Some("fast")        => task_query_g(f, || FastDataset::new()     , |_, _, _, _| FastDataset::new()             , query_num),
         Some("light")       => task_query_g(f, || LightDataset::new()    , |_, _, _, _| LightDataset::new()            , query_num),
-        Some("tree")        => task_query_g(f, || TreedDataset::new()    , |_, _, _, _| TreedDataset::new()            , query_num),
-        Some("tree_anti")   => task_query_g(f, || TreedDataset::new()    , |a, b, c, d| TreedDataset::new_anti(a,b,c,d), query_num),
+        Some("tree")        => task_query_g(f, || TreeDataset::new()     , |_, _, _, _| TreeDataset::new()             , query_num),
+        Some("tree_anti")   => task_query_g(f, || TreeDataset::new()     , |a, b, c, d| TreeDataset::new_anti(a,b,c,d) , query_num),
         Some("full")        => task_query_g(f, || FullIndexDataset::new(), |_, _, _, _| FullIndexDataset::new()        , query_num),
         Some("array")       => task_query_g(f, || ArryDataset::new()     , |_, _, _, _| ArryDataset::new()             , query_num),
         Some("fast_array")  => task_query_g(f, || FastDataset::new()     , |_, _, _, _| ArryDataset::new()             , query_num),
         Some("light_array") => task_query_g(f, || LightDataset::new()    , |_, _, _, _| ArryDataset::new()             , query_num),
-        Some("tree_array")  => task_query_g(f, || TreedDataset::new()    , |_, _, _, _| ArryDataset::new()             , query_num),
+        Some("tree_array")  => task_query_g(f, || TreeDataset::new()     , |_, _, _, _| ArryDataset::new()             , query_num),
         Some("full_array")  => task_query_g(f, || FullIndexDataset::new(), |_, _, _, _| ArryDataset::new()             , query_num),
         Some(v) => {
             eprintln!("Unknown variant {}", v);
@@ -73,8 +73,7 @@ fn request<G, FP, GP> (g: &G,
     let dbr_vincent = Term::<&'static str>::new_iri("http://dbpedia.org/resource/Vincent_Descombes_Sevoie").unwrap();
     let none: Option<&Term<Rc<str>>> = None;
 
-    // Build
-
+    // Match
     let t_build_start = OffsetDateTime::now_utc();
     let mut results = match query_num {
         1 => g.quads_with_pog(&rdf::type_, &dbo_person, none),
@@ -98,7 +97,6 @@ fn request<G, FP, GP> (g: &G,
     let t_build = (t_build_end - t_build_start).as_seconds_f64();
 
     // Loop
-
     let t_loop_start = OffsetDateTime::now_utc();
     
     let mut c = 0;
