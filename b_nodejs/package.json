@@ -1,5 +1,7 @@
 {
     "dependencies": {
+        "@bruju/sophia_wasm": "https://github.com/BruJu/wasmify-sophia/releases/download/v0.1.0/bruju-sophia_wasm-0.1.0.tgz",
+        "@bruju/wasm-tree": "0.2.0",
         "@graphy/content.ttl.read": "^4.2.1",
         "@graphy/memory.dataset.fast": "^4.2.1",
         "n3": "^1.0.0-beta.1"

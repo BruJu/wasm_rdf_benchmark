@@ -1,7 +1,6 @@
 const fs = require("fs");
 const { performance } = require("perf_hooks");
-
-TASKS = ['parse', 'query', 'query2', 'query3', 'query4'];
+const n3 = require("n3");
 
 const filename = process.argv[3];
 if (filename === undefined) {
@@ -9,12 +8,6 @@ if (filename === undefined) {
     process.exit(9);
 }
 
-const task = process.argv[2];
-if (TASKS.indexOf(task) === -1) {
-    console.error(`task must be one of ${TASKS}`);
-    process.exit(10);
-}
-console.error(`task: ${task}`);
 const stream = fs.createReadStream(filename);
 
 function get_vmsize() {
@@ -23,8 +16,60 @@ function get_vmsize() {
     return Number.parseInt(val);
 }
 
+function taskValidator(validTasks) {
+    const task = process.argv[2];
+
+    if (validTasks.indexOf(task) === -1) {
+        console.error(`task must be one of ${validTasks}`);
+        process.exit(10);
+    }
+
+    console.error(`task: ${task}`);
+
+    return task;
+}
+
+function datasetValidator(validDatasets, text="dataset") {
+    let dataset = validDatasets[process.argv[4]];
+
+    if (dataset === undefined) {
+        console.error("Unknown " + text + ": " + process.argv[4]);
+        process.exit(7);
+    }
+
+    return dataset;
+}
+
+function patternToTerms(pattern) {
+    let subject   = undefined;
+    let predicate = undefined;
+    let object    = undefined;
+    let graph     = undefined;
+
+    if (pattern === "S") {
+        subject = n3.DataFactory.namedNode('http://dbpedia.org/resource/Vincent_Descombes_Sevoie');
+    } else if (pattern === "SG") {
+        subject = n3.DataFactory.namedNode('http://dbpedia.org/resource/Vincent_Descombes_Sevoie');
+        graph = n3.DataFactory.defaultGraph();
+    } else if (pattern === "PO") {
+        predicate = n3.DataFactory.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type');
+        object = n3.DataFactory.namedNode('http://dbpedia.org/ontology/Person');
+    } else if (pattern === "POG") {
+        predicate = n3.DataFactory.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type');
+        object = n3.DataFactory.namedNode('http://dbpedia.org/ontology/Person');
+        graph = n3.DataFactory.defaultGraph();
+    } else {
+        console.error("Unknown pattern: " + pattern);
+        process.exit(15);
+    }
+
+    return [subject, predicate, object, graph];
+}
+
+
+exports.taskValidator = taskValidator;
+exports.datasetValidator = datasetValidator;
 exports.performance = performance;
-exports.filename = filename;
-exports.task = task;
 exports.stream = stream;
 exports.get_vmsize = get_vmsize;
+exports.patternToTerms = patternToTerms;

@@ -1,4 +1,6 @@
-# Wasm RDF Benchmark
+# Benchmarking WasmTree 
+
+*This repository is currently in WIP to clean as much as possible the code / the instructions and make it auto-sufficient.*
 
 This repository purpose is to benchmark the performances of :
 
@@ -8,17 +10,19 @@ This repository purpose is to benchmark the performances of :
 - Other RDF.JS implementations (mainly Graphy https://graphy.link/ )
 - Another RDF.JS implementation based on Rust/Wasm but not on Sophia https://github.com/BruJu/WasmTreeDataset
 
-## Running the benchmarks
+## Simple pattern matching benchmarks
 
-- `make` to (hopefully) install all dependencies but the one mentionnes below
-- If you want to benchmark exported datasets / custom implementations of Datasets / WasmTreeDataset, make sure you have downloaded and compiled them (with `wasm-pack build --target nodejs` and make sure the `b_nodejs/sophia_js.js` points to the right js file (in the correct folder)
-
-- Comment / Uncomment the benchmark you want to run in `./run_all.sh` and run it
+- `make`
+- Comment / Uncomment the benchmark you want to run in `./run_benchmark` for time measures, `./run_benchmark_load` for memory and run it
 
 - Results will be written in the csv folder
 
 
-TODO : resorting only on `./run_benchmark` instead of `run_all.sh` to call it is probably better
+## SPARQL Queries
+
+https://gist.github.com/BruJu/919c1d3c10dfed21553e4a6e9f910b2a 
+
+(/!\\ The used version of Comunica was v1.13.1)
 
 
 ## License
