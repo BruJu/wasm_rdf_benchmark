@@ -8,6 +8,7 @@ const sophia_js = require('../../wasmify_sophia/sophia-wasm/pkg/sophia_wasm.js')
 const sophia_js_wrapped = require('../../wasmify_sophia/sophia-wasm/pkg/wrapper.js');
 // https://github.com/BruJu/WasmTreeDataset
 const wasm_tree = require('../../WasmTreeDataset/wasm-tree-frontend');
+const wasm_tree_alt = require('../../WasmTreeDataset/wasm-tree-frontend/alternative.js');
 // Graphy
 const graphy_dataset = require("@graphy/memory.dataset.fast")
 
@@ -21,6 +22,8 @@ const do_task = {
     'query4': () => query_nt(4)
 }[task];
 
+// rm isolate-0x*.log && node --prof ./sophia_js.js query ../data/persondata_en_100k.ttl wasm_tree && node --prof-process --preprocess -j isolate*.log | flamebearer
+
 
 const datasetInstancier = {
     "fast"      : () => new sophia_js.FastDataset(),
@@ -33,7 +36,11 @@ const datasetInstancier = {
     "tree_array": () => new sophia_js.TreedDatasetToA(),
     "full_array": () => new sophia_js.FullDatasetToA(),
     "wrap_fast" : () => new sophia_js_wrapped.SophiaDatasetWrapper(new sophia_js.FastDataset()),
+    "wrap_tree" : () => new sophia_js_wrapped.SophiaDatasetWrapper(new sophia_js.TreedDataset()),
     "wasm_tree" : () => new wasm_tree.Dataset(),
+    "wasm_tree_FI": () => new wasm_tree.AlwaysForestDataset(),
+    "wasm_tree_FS": () => new wasm_tree_alt.DatasetWithSharedIndexerNoIndexList(),
+    "wasm_tree_II": () => new wasm_tree_alt.DatasetWithIndexListNoSharedIndexer(),
     "graphy"    : () => graphy_dataset()
 };
 
@@ -130,7 +137,6 @@ function query_nt(query_num) {
             
             let firstData = bench();
             let secondData = bench();
-            // console.error(sophia_js.__wasm.memory.buffer);
             const mem2 = get_vmsize() - mem0;
 
             if (dataset.free !== undefined) {

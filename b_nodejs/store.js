@@ -7,7 +7,7 @@ const n3 = require("n3");
 const wrapped = require('../../Portable-Reasoning-in-Web-Assembly/rusttree/pkg/wrappedtree.js')
 // Graphy
 const graphy_dataset = require("@graphy/memory.dataset.fast")
-
+const wasm_tree = require('../../WasmTreeDataset/wasm-tree-frontend');
 const ttl_read = require('@graphy/content.ttl.read');
 
 const { task, filename, stream, get_vmsize, performance } = require("./common.js")
@@ -73,6 +73,9 @@ function query_nt(query_num) {
     switch (process.argv[4]) {
         case "n3":
             store = new n3.Store();
+            break;
+        case "wasm_tree":
+            store = new wasm_tree.Store();
             break;
         case "Wrapped":
             store = new wrapped.TreeStore();

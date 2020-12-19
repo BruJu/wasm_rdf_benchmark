@@ -9,52 +9,74 @@ import sys
 os.chdir(os.path.dirname(sys.argv[0]))
 
 KINDS = {
-    "fast"             : [ "rust", "rdfjsdataset"               ],
-    "light"            : [ "rust", "rdfjsdataset"               ],
-    "tree"             : [ "rust", "rdfjsdataset"               ],
-    "tree_anti"        : [ "rust", "rdfjsdataset"               ],
-    "full"             : [ "rust", "rdfjsdataset"               ],
-    "array"            : [ "rust", "rdfjsdataset"               ],
-    "fast_array"       : [ "rust", "rdfjsdataset"               ],
-    "tree_array"       : [ "rust", "rdfjsdataset"               ],
-    "full_array"       : [ "rust", "rdfjsdataset"               ],
-    "wrap_tree"        : [         "rdfjsdataset"               ],
-    "wrap_fast"        : [         "rdfjsdataset"               ],
-    "wasm_tree"        : [         "rdfjsdataset", "rdfjsstore" ], # Index List   , Shared Indexer
-    "wasm_tree_FI"     : [         "rdfjsdataset"               ], # Always Forest, Independant Indexer
-    "wasm_tree_FS"     : [         "rdfjsdataset"               ], # Always Forest, Shared Indexer
-    "wasm_tree_II"     : [         "rdfjsdataset"               ], # Index List   , Independant Indexer
-    "graphy"           : [         "rdfjsdataset"               ],
-    "n3"               : [                         "rdfjsstore" ]
+    "tree"      : { 'parse' : 1, 'query': 6 },
+    "wasm_tree" : { 'parse' : 1, 'query': 6 },
+    "graphy"    : { 'parse' : 1 },
+    "n3"        : { 'parse' : 3 }
 }
 
-TOOLS = {
-    "rust"        : "./b_sophia/target/release/wasm_rdf_benchmark {task} '{filename}' {kind}",
-    "rdfjsdataset": "./b_nodejs/sophia_js.js                      {task} '{filename}' {kind}",
-    "rdfjsstore"  : "./b_nodejs/store.js                          {task} '{filename}' {kind}"
-}
-
-FILES = [
-    ("./data/persondata_en_10k.ttl",    10_000),
-    ("./data/persondata_en_20k.ttl",    20_000),
-    ("./data/persondata_en_40k.ttl",    40_000),
-    ("./data/persondata_en_80k.ttl",    80_000),
-    ("./data/persondata_en_100k.ttl",  100_000),
-    ("./data/persondata_en_500k.ttl",  500_000),
-    ("./data/persondata_en_1M.ttl",  1_000_000),
-    # ("./data/persondata_en.ttl",    10_310_000),
-]
-
-HEADER = "t_load,m_graph,m_graph_end,t_first,t_rest,t_second,t_second_rest"
-
-QUERIES = {
-    "query": "POG",
-    "query2": "SG",
-    "query3": "PO",
-    "query4": "S"
-}
+COMMAND = "./b_nodejs/loadMeasure.js {task} '{filename}' {kind}"
 
 def main():
+    # -- ArgParse
+    if len(sys.argv) < 2:
+        print("usage: {} <file> <number_of_runs = 1>".format(sys.argv[0]), file=sys.stderr)
+        exit(0)
+    
+    filename = sys.argv[1]
+    
+    if len(sys.argv) >= 3:
+        iterations = int(sys.argv[2])
+    else:
+        iterations = 1
+
+    if len(sys.argv) >= 4:
+        datasets = [kind for kind in filter(lambda x : x in KINDS, sys.argv[3:])]
+    else:
+        datasets = [kind for kind in KINDS]
+
+    # -- Bench list
+
+    list_of_tasks = []
+    for _ in range(iterations):
+        for dataset in datasets:
+            for arg_mode in KINDS[dataset]:
+                t = (dataset, arg_mode, KINDS[dataset][arg_mode])
+                list_of_tasks.append(t)   
+
+    random.shuffle(list_of_tasks)
+
+    # -- Run the benchs
+
+    csv = "csv/loadbench_{}.csv".format(
+        str(datetime.datetime.now())[:19].replace(' ', '-').replace(':', '-'),
+    )
+
+    file_exists = os.path.isfile(csv)
+
+    with open(csv, 'w+') as f:
+        try:
+            print("WRITING", csv, file=sys.stderr)
+            if not file_exists:
+                f.write("{}\n".format("dataset,nb_trees,file,nb_quads,memory_usage,loading_time"))
+                f.flush()
+
+            for dataset, arg, nb_trees in list_of_tasks:
+                one_benchmark(f, filename, dataset, arg, nb_trees)
+
+        except KeyboardInterrupt:
+            sys.stdout.write("\r") # clear the '^C' that appears
+
+def one_benchmark(f, filename, dataset, arg, nb_trees):
+    cmd = COMMAND.format(task=arg, filename=filename, kind=dataset)
+    res = subprocess.run(cmd, shell=True, check=True, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+    f.write("{},{},{},{}".format(dataset, nb_trees, filename, res.stdout.decode('utf8')))
+    f.flush()
+    print("DONE", dataset, nb_trees, filename, file=sys.stderr)
+
+main()
+
+'''
     if len(sys.argv) != 4:
         print(sys.argv)
         print("usage: {} <task> <tool> <kind>".format(sys.argv[0]), file=sys.stderr)
@@ -107,6 +129,7 @@ def benchmark(task, tool, kind, nb_iter):
     
     run_benchmarks(list_of_tasks)
 
+
 def mass_benchmark():
     NB_ITER = 2
 
@@ -146,40 +169,27 @@ def exportation_dataset_impact(NB_ITER):
 def paperESWC(NB_ITER):
     list_of_tasks = []
     
-    for task in ["query4", "query"]:
+    task = "query4" # S
+    
+    for filename, size in FILES:
+        for _ in range(NB_ITER):
+            t = (task, "rust", "tree", filename, size)
+            list_of_tasks.append(t)
 
-        for filename, size in FILES:
-            for _ in range(NB_ITER):
-                for kind in ["tree", "wasm_tree", "wrap_tree", "graphy"]:
-                    if "rdfjsdataset" not in KINDS[kind]:
-                        print("errrr")
-                        exit()
-
+            for kind in ["tree", "wasm_tree", "graphy"]:
+                if "rdfjsdataset" in KINDS[kind]:
                     t = (task, "rdfjsdataset", kind, filename, size)
                     list_of_tasks.append(t)
-                
-                for kind in ["wasm_tree", "n3"]:
-                    if "rdfjsstore" not in KINDS[kind]:
-                        print("errrr")
-                        exit()
+
+    task = "query" # POG
+
+    for filename, size in FILES:
+        for _ in range(NB_ITER):
+            for kind in ["wasm_tree", "n3"]:
+                if "rdfjsstore" in KINDS[kind]:
                     t = (task, "rdfjsstore", kind, filename, size)
                     list_of_tasks.append(t)
 
-    run_benchmarks(list_of_tasks)
-
-
-def paperESWC_barPlot(NB_ITER):
-    list_of_tasks = []
-    
-    
-    for task in ["query4", "query"]: # S, POG
-        for filename, size in [("./data/persondata_en_1M.ttl",  1_000_000)]:
-            for _ in range(NB_ITER):
-                for kind in ["tree", "wasm_tree", "wrap_tree", "graphy", "wasm_tree_FI", "wasm_tree_FS", "wasm_tree_II"]:
-                    if "rdfjsdataset" in KINDS[kind]:
-                        t = (task, "rdfjsdataset", kind, filename, size)
-                        list_of_tasks.append(t)
-    
     run_benchmarks(list_of_tasks)
 
 def measure_javascript(NB_ITER):
@@ -245,23 +255,6 @@ def one_benchmark(f, task, tool, kind, filename, size):
 #measure_tree(20)
 #exportation_dataset_impact(20)
 
-def store_or_dataset(NB_ITER):
-
-    list_of_tasks = []
-    
-    task = "query" # S
-    
-    for filename, size in FILES:
-        for _ in range(NB_ITER):
-            for kind in ["wasm_tree"]:
-                t = (task, "rdfjsdataset", kind, filename, size)
-                list_of_tasks.append(t)
-                t = (task, "rdfjsstore", kind, filename, size)
-                list_of_tasks.append(t)
-
-    run_benchmarks(list_of_tasks)
-
-
 def oooh():
     NB_ITER = 20
     list_of_tasks = []
@@ -322,9 +315,5 @@ def ooop():
     
     run_benchmarks(list_of_tasks)
 
-paperESWC(10)
-paperESWC(50)
-
-#paperESWC_barPlot(20)
-
-#store_or_dataset(10)
+paperESWC(20)
+'''
