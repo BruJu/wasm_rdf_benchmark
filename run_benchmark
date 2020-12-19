@@ -20,18 +20,18 @@ KINDS = {
     "full_array"       : [ "rust", "rdfjsdataset"               ],
     "wrap_tree"        : [         "rdfjsdataset"               ],
     "wrap_fast"        : [         "rdfjsdataset"               ],
-    "wasm_tree"        : [         "rdfjsdataset", "rdfjsstore" ], # Index List   , Shared Indexer
-    "wasm_tree_FI"     : [         "rdfjsdataset"               ], # Always Forest, Independant Indexer
-    "wasm_tree_FS"     : [         "rdfjsdataset"               ], # Always Forest, Shared Indexer
-    "wasm_tree_II"     : [         "rdfjsdataset"               ], # Index List   , Independant Indexer
+    "wasm_tree"        : [         "rdfjsdataset", "rdfjsstore" ], # Identifier List, Shared Mapping
+    "wasm_tree_FI"     : [         "rdfjsdataset"               ], # Always Forest  , Independant Mapping
+    "wasm_tree_FS"     : [         "rdfjsdataset"               ], # Always Forest  , Shared Mapping
+    "wasm_tree_II"     : [         "rdfjsdataset"               ], # Identifier List, Independant Mapping
     "graphy"           : [         "rdfjsdataset"               ],
     "n3"               : [                         "rdfjsstore" ]
 }
 
 TOOLS = {
     "rust"        : "./b_sophia/target/release/wasm_rdf_benchmark {task} '{filename}' {kind}",
-    "rdfjsdataset": "./b_nodejs/sophia_js.js                      {task} '{filename}' {kind}",
-    "rdfjsstore"  : "./b_nodejs/store.js                          {task} '{filename}' {kind}"
+    "rdfjsdataset": "./b_nodejs/benchDataset.js                   {task} '{filename}' {kind}",
+    "rdfjsstore"  : "./b_nodejs/benchStore.js                     {task} '{filename}' {kind}"
 }
 
 FILES = [
@@ -48,10 +48,10 @@ FILES = [
 HEADER = "t_load,m_graph,m_graph_end,t_first,t_rest,t_second,t_second_rest"
 
 QUERIES = {
-    "query": "POG",
-    "query2": "SG",
-    "query3": "PO",
-    "query4": "S"
+    "POG": "POG",
+    "SG": "SG",
+    "PO": "PO",
+    "S": "S"
 }
 
 def main():
@@ -74,7 +74,6 @@ def main():
     tool = args[1]
     kind = args[2]
 
-
     nb_iter = int(os.getenv("N", "4"))
 
     benchmark(task, tool, kind, nb_iter)
@@ -92,11 +91,6 @@ def benchmark(task, tool, kind, nb_iter):
         print("Invalid kind: " + kind)
         print("available kinds: " + ", ".join(KINDS), file=sys.stderr)
         exit(8)
-
-
-    csv = "csv/bench_{}.csv".format(
-        str(datetime.datetime.now())[:19].replace(' ', '-').replace(':', '-'),
-    )
 
     list_of_tasks = []
 
@@ -146,7 +140,7 @@ def exportation_dataset_impact(NB_ITER):
 def paperESWC(NB_ITER):
     list_of_tasks = []
     
-    for task in ["query4", "query"]:
+    for task in ["S", "POG"]:
 
         for filename, size in FILES:
             for _ in range(NB_ITER):
@@ -172,7 +166,7 @@ def paperESWC_barPlot(NB_ITER):
     list_of_tasks = []
     
     
-    for task in ["query4", "query"]: # S, POG
+    for task in ["S", "POG"]: # S, POG
         for filename, size in [("./data/persondata_en_1M.ttl",  1_000_000)]:
             for _ in range(NB_ITER):
                 for kind in ["tree", "wasm_tree", "wrap_tree", "graphy", "wasm_tree_FI", "wasm_tree_FS", "wasm_tree_II"]:
@@ -196,7 +190,7 @@ def measure_javascript(NB_ITER):
 
 def measure_tree(NB_ITER):
     list_of_tasks = []
-    for task in ["query"]:
+    for task in ["POG"]:
         for kind in ["tree", "tree_anti", "tree_array"]:
             for filename, size in FILES:
                 for _ in range(NB_ITER):
@@ -249,7 +243,7 @@ def store_or_dataset(NB_ITER):
 
     list_of_tasks = []
     
-    task = "query" # S
+    task = "POG" # S
     
     for filename, size in FILES:
         for _ in range(NB_ITER):
@@ -268,7 +262,7 @@ def oooh():
 
     for size in range(5000, 100000, 5000):
         for _ in range(NB_ITER):
-            t = ("query", "rdfjsdataset", "wasm_tree", 'data/cpersondata_en_' + str(size) + ".ttl", size)
+            t = ("POG", "rdfjsdataset", "wasm_tree", 'data/cpersondata_en_' + str(size) + ".ttl", size)
             list_of_tasks.append(t)
 
 
