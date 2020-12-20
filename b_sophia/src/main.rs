@@ -159,10 +159,10 @@ fn main() {
     let f = io::BufReader::new(f);
     
     match task_id {
-        "query" => task_query(f, variant, 1),
-        "query2" => task_query(f, variant, 2),
-        "query3" => task_query(f, variant, 3),
-        "query4" => task_query(f, variant, 4),
+        "POG" => task_query(f, variant, 1),
+        "SG"  => task_query(f, variant, 2),
+        "PO"  => task_query(f, variant, 3),
+        "S"   => task_query(f, variant, 4),
         _   => {
             eprint!("Unknown task {}", task_id);
             process::exit(1);

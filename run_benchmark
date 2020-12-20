@@ -49,25 +49,20 @@ HEADER = "t_load,m_graph,m_graph_end,t_first,t_rest,t_second,t_second_rest"
 
 QUERIES = [ "S", "SG", "PO", "POG" ]
 
-def main():
-    if len(sys.argv) != 4:
+def individual():
+    if len(sys.argv) != 6:
         print(sys.argv)
-        print("usage: {} <task> <tool> <kind>".format(sys.argv[0]), file=sys.stderr)
+        print("usage: {} individual <NB_ITER> <task> <tool> <kind>".format(sys.argv[0]), file=sys.stderr)
         print("  available tasks: {}"   .format(",".join(QUERIES)))
         print("  available tools: {}"   .format(",".join(TOOLS)  ))
         print("  available datasets: {}".format(",".join(KINDS)  ))
         exit(1)
         
-    args = sys.argv[1:]
+    args = sys.argv[3:]
     task = args[0]
     tool = args[1]
     kind = args[2]
 
-    nb_iter = int(os.getenv("N", "4"))
-
-    benchmark(task, tool, kind, nb_iter)
-
-def benchmark(task, tool, kind, nb_iter):
     if task not in QUERIES:
         print(task)
         print("available tasks: " + ", ".join(QUERIES), file=sys.stderr)
@@ -84,14 +79,16 @@ def benchmark(task, tool, kind, nb_iter):
     list_of_tasks = []
 
     for filename, size in FILES:
-        for _ in range(nb_iter):
-            t = (task, tool, kind, filename, size)
-            list_of_tasks.append(t)
+        t = (task, tool, kind, filename, size)
+        list_of_tasks.append(t)
     
-    run_benchmarks(list_of_tasks)
+    return list_of_tasks
 
 def run_benchmarks(list_of_tasks):
+    # Shuffle
     random.shuffle(list_of_tasks)
+
+    # Prepare output file
     csv = "csv/bench_{}.csv".format(
         str(datetime.datetime.now())[:19].replace(' ', '-').replace(':', '-'),
     )
@@ -105,6 +102,7 @@ def run_benchmarks(list_of_tasks):
                 f.write("tool,dataset,pattern,size,{}\n".format(HEADER))
                 f.flush()
 
+            # Run every benchmark
             for task, tool, kind, filename, size in list_of_tasks:
                 one_benchmark(f, task, tool, kind, filename, size)
 
@@ -121,31 +119,27 @@ def one_benchmark(f, task, tool, kind, filename, size):
 
 # =============================================================================
 
-def mass_benchmark():
-    NB_ITER = 2
-
+def everything():
     list_of_tasks = []
     for task in QUERIES:
         for kind in KINDS:
             for filename, size in FILES:
-                for _ in range(NB_ITER):
-                    if "rust" in KINDS[kind]:
-                        t = (task, "rust", kind, filename, size)
-                        list_of_tasks.append(t)
-                    
-                    if "rdfjsdataset" in KINDS[kind]:
-                        t = (task, "rdfjsdataset", kind, filename, size)
-                        list_of_tasks.append(t)
+                if "rust" in KINDS[kind]:
+                    t = (task, "rust", kind, filename, size)
+                    list_of_tasks.append(t)
+                
+                if "rdfjsdataset" in KINDS[kind]:
+                    t = (task, "rdfjsdataset", kind, filename, size)
+                    list_of_tasks.append(t)
 
-    run_benchmarks(list_of_tasks)
+    return list_of_tasks
 
 
-def exportation_dataset_impact(NB_ITER):
+def fast_dataset_exportation():
     list_of_tasks = []
     for task in QUERIES:
         for kind in ["fast", "fast_array", "wrap_fast"]:
             for filename, size in FILES:
-                for _ in range(NB_ITER):
                     if "rust" in KINDS[kind]:
                         t = (task, "rust", kind, filename, size)
                         list_of_tasks.append(t)
@@ -154,134 +148,92 @@ def exportation_dataset_impact(NB_ITER):
                         t = (task, "rdfjsdataset", kind, filename, size)
                         list_of_tasks.append(t)
 
-    run_benchmarks(list_of_tasks)
+    return list_of_tasks
 
-
-def paperESWC(NB_ITER):
+def wasm_tree_general():
     list_of_tasks = []
     
     for task in ["S", "POG"]:
-
         for filename, size in FILES:
-            for _ in range(NB_ITER):
-                for kind in ["tree", "wasm_tree", "wrap_tree", "graphy"]:
-                    if "rdfjsdataset" not in KINDS[kind]:
-                        print("errrr")
-                        exit()
+            for kind in ["wasm_tree", "tree", "wrap_tree", "graphy"]:
+                t = (task, "rdfjsdataset", kind, filename, size)
+                list_of_tasks.append(t)
+            
+            for kind in ["wasm_tree", "n3"]:
+                t = (task, "rdfjsstore", kind, filename, size)
+                list_of_tasks.append(t)
 
-                    t = (task, "rdfjsdataset", kind, filename, size)
-                    list_of_tasks.append(t)
-                
-                for kind in ["wasm_tree", "n3"]:
-                    if "rdfjsstore" not in KINDS[kind]:
-                        print("errrr")
-                        exit()
-                    t = (task, "rdfjsstore", kind, filename, size)
-                    list_of_tasks.append(t)
+    return list_of_tasks
 
-    run_benchmarks(list_of_tasks)
-
-
-def paperESWC_barPlot(NB_ITER):
+def wasm_tree_ablation():
     list_of_tasks = []
     
     for task in ["S", "POG"]:
         for filename, size in [("./data/persondata_en_1M.ttl", 1_000_000)]:
-            for _ in range(NB_ITER):
-                for kind in ["tree", "wasm_tree", "wrap_tree", "graphy", "wasm_tree_FI", "wasm_tree_FS", "wasm_tree_II"]:
-                    if "rdfjsdataset" in KINDS[kind]:
-                        t = (task, "rdfjsdataset", kind, filename, size)
-                        list_of_tasks.append(t)
+            for kind in ["tree", "wasm_tree", "wrap_tree", "graphy", "wasm_tree_FI", "wasm_tree_FS", "wasm_tree_II"]:
+                if "rdfjsdataset" in KINDS[kind]:
+                    t = (task, "rdfjsdataset", kind, filename, size)
+                    list_of_tasks.append(t)
     
-    run_benchmarks(list_of_tasks)
+    return list_of_tasks
 
-def measure_javascript(NB_ITER):
+def tree_variants():
     list_of_tasks = []
-    for task in QUERIES:
-        for kind in ["fast", "fast_array", "tree", "wasm_tree", "array", "graphy"]:
-            for filename, size in FILES:
-                for _ in range(NB_ITER):
-                    if "rdfjsdataset" in KINDS[kind]:
-                        t = (task, "rdfjsdataset", kind, filename, size)
-                        list_of_tasks.append(t)
 
-    run_benchmarks(list_of_tasks)
+    for kind in ["tree", "tree_anti", "tree_array"]:
+        for filename, size in FILES:
+                if "rust" in KINDS[kind]:
+                    t = ("POG", "rust", kind, filename, size)
+                    list_of_tasks.append(t)
 
-def measure_tree(NB_ITER):
+    return list_of_tasks
+
+def wasm_tree_store_vs_dataset():
     list_of_tasks = []
-    for task in ["POG"]:
-        for kind in ["tree", "tree_anti", "tree_array"]:
-            for filename, size in FILES:
-                for _ in range(NB_ITER):
-                    if "rust" in KINDS[kind]:
-                        t = (task, "rust", kind, filename, size)
-                        list_of_tasks.append(t)
-
-    run_benchmarks(list_of_tasks)
-
-
-def store_or_dataset(NB_ITER):
-
-    list_of_tasks = []
-    
-    task = "POG" # S
     
     for filename, size in FILES:
-        for _ in range(NB_ITER):
             for kind in ["wasm_tree"]:
-                t = (task, "rdfjsdataset", kind, filename, size)
+                t = ("POG", "rdfjsdataset", kind, filename, size)
                 list_of_tasks.append(t)
-                t = (task, "rdfjsstore", kind, filename, size)
+                t = ("POG", "rdfjsstore", kind, filename, size)
                 list_of_tasks.append(t)
 
+    return list_of_tasks
+
+
+if __name__ == "__main__":
+    available_choices = {
+        "individual"         : { "function": individual        , "description": "Evaluate one configuration" },
+        "WasmTreeEvaluation" : { "function": wasm_tree_general , "description": "Evaluate TreeDataset and WasmTree on S and POG requests"},
+        "WasmTreeAblation"   : { "function": wasm_tree_ablation, "description": "Evaluate TreeDataset and WasmTree as a dataset with some features missing" },
+        "WasmTreeDatasetOrStore" : { "function": wasm_tree_store_vs_dataset, "description": "Run benchmarks for WasmTreeDataset and WasmTreeStore only"},
+        # "VariantsOfTree"     : { "function": tree_variants, "description": "Compares the variants of TreeDataset in native Rust" },
+        # "fast_dataset_exportation" : { "function": fast_dataset_exportation, "description": "Performances of FastDataset in native Rust compared with exportation in Javascript" },
+        # "everything" : { "function" : everything, "description": "Everything which is not a store"}
+    }
+
+    if len(sys.argv) == 1 or sys.argv[1] not in available_choices:
+        print(sys.argv)
+        print("usage: {} [mode]".format(sys.argv[0]), file=sys.stderr)
+        print("  available modes:")
+
+        for available in available_choices:
+            print("  - {}: {}".format(available, available_choices[available]["description"]))
+        exit(1)
+
+    if len(sys.argv) > 2:
+        nb_iter = int(sys.argv[2])
+    else:
+        nb_iter = 1
+    
+    list_of_tasks = available_choices[sys.argv[1]]["function"]()
+
+    # Multiply the number of tasks in list_of_task by nb_iter
+    lot_len = len(list_of_tasks)
+    for _ in range(nb_iter - 1):
+        for i in range(lot_len):
+            list_of_tasks.append(list_of_tasks[i])
+
+    # Run the benchmark (the list_of_tasks will be shuffled)
     run_benchmarks(list_of_tasks)
 
-
-def oooh():
-    NB_ITER = 20
-    list_of_tasks = []
-
-    for _ in range(NB_ITER):
-        for size in range(5000, 100000, 5000):
-            t = ("POG", "rdfjsdataset", "wasm_tree", 'data/cpersondata_en_' + str(size) + ".ttl", size)
-            list_of_tasks.append(t)
-
-        for filename, size in FILES:
-            for task in QUERIES:
-                for kind in ["fast", "fast_array", "wrap_fast", "tree", "wasm_tree", "array", "graphy"]:
-                    if "rdfjsdataset" in KINDS[kind]:
-                        t = (task, "rdfjsdataset", kind, filename, size)
-                        list_of_tasks.append(t)
-            
-                for kind in ["fast", "fast_array", "wrap_fast", "tree"]:
-                    if "rust" in KINDS[kind]:
-                        t = (task, "rust", kind, filename, size)
-                        list_of_tasks.append(t)
-    
-    run_benchmarks(list_of_tasks)
-
-
-def ooop():
-    NB_ITER = 40
-    list_of_tasks = []
-
-    for task in QUERIES:
-        for kind in ["wrap_tree", "tree", "wasm_tree", "graphy"]:
-            for filename, size in FILES:
-                if size != 1000000:
-                    continue
-
-                for _ in range(NB_ITER):
-                    if "rdfjsdataset" in KINDS[kind]:
-                        t = (task, "rdfjsdataset", kind, filename, size)
-                        list_of_tasks.append(t)
-    
-    
-    run_benchmarks(list_of_tasks)
-
-paperESWC(50)
-#paperESWC(50)
-
-paperESWC_barPlot(20)
-
-#store_or_dataset(10)
