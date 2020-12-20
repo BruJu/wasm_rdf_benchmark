@@ -4,21 +4,36 @@
 
 This repository purpose is to benchmark the performances of :
 
-- Sophia Datasets ( https://github.com/pchampin/sophia_rs/ )
-- Some personal implementation of Datasets ( https://github.com/BruJu/Portable-Reasoning-in-Web-Assembly/tree/master/sophia-wasm/src )
-- Both in native Rust and when exported to Web Assembly using the wrapper class proposed in https://github.com/BruJu/Portable-Reasoning-in-Web-Assembly used in NodeJs
-- Other RDF.JS implementations (mainly Graphy https://graphy.link/ )
-- Another RDF.JS implementation based on Rust/Wasm but not on Sophia https://github.com/BruJu/WasmTreeDataset
+- [Sophia Datasets in native Rust](https://github.com/pchampin/sophia_rs/)
+- [Some personal implementation of Sophia Datasets in native Rust, including **TreeDataset**](https://github.com/BruJu/wasmify-sophia/tree/master/bjdatasets)
+- [Their exportation in Javascript when using sophia-wasm adapters / wasm-bindgen](https://github.com/BruJu/wasmify-sophia)
+- [**WasmTree**, an RDF.JS implementation which mixes Rust and Javascript code](https://github.com/BruJu/WasmTreeDataset)
+- They are compared with [**Graphy**](https://www.npmjs.com/package/graphy) and [**n3.js**](https://www.npmjs.com/package/n3)
 
-## Simple pattern matching benchmarks
+## How to reproduce the benchmarks
 
-- `make`
+- Node.JS, npm, rustc and cargo are required
+- Run `make` to download and install all the dependencies
+
+### Simple pattern matching benchmarks
+
 - Comment / Uncomment the benchmark you want to run in `./run_benchmark` for time measures, `./run_benchmark_load` for memory and run it
 
 - Results will be written in the csv folder
 
+### Initialization / Loading benchmark
 
-## SPARQL Queries
+- `./benchmark_loading <file> <number_of_runs = 1>`
+
+- The following RDF.JS datasets will be evaluated :
+    - TreeDataset with 1 and 6 indexes
+    - WasmTree with 1 and 6 indexes
+    - Graphy
+    - n3.js (using its `addQuad` method to simulate its behaviour if it was a Dataset)
+
+- Results will written be in csv format in `csv/load_bench_currentdate.csv`
+
+### SPARQL Queries
 
 https://gist.github.com/BruJu/919c1d3c10dfed21553e4a6e9f910b2a 
 
@@ -30,5 +45,3 @@ https://gist.github.com/BruJu/919c1d3c10dfed21553e4a6e9f910b2a
 This repository uses the https://github.com/pchampin/sophia_benchmark infrastructure as a base, licensied under the MIT Licence.
 
 This repository itself is also licensed under the MIT Licence.
-
-
