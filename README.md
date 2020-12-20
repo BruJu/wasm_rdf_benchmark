@@ -17,13 +17,15 @@ This repository purpose is to benchmark the performances of :
 
 ### Simple pattern matching benchmarks
 
-- Comment / Uncomment the benchmark you want to run in `./run_benchmark` for time measures, `./run_benchmark_load` for memory and run it
+- Run `./pattern_matching_benchmark`
+    - `./pattern_matching_benchmark WasmTreeEvaluation 10+50` for Simple Pattern Matching
+    - `./pattern_matching_benchmark WasmTreeAblation 20` for the repartition comparison (with the ablation test)
 
-- Results will be written in the csv folder
+- Results will be written in the csv folder `csv/bench_currentdate.csv`
 
 ### Initialization / Loading benchmark
 
-- `./benchmark_loading <file> <number_of_runs = 1>`
+- `./loading_benchmark <file> <number_of_runs = 1>`
 
 - The following RDF.JS datasets will be evaluated :
     - TreeDataset with 1 and 6 indexes

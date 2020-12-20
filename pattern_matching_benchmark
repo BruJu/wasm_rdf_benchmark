@@ -222,18 +222,19 @@ if __name__ == "__main__":
         exit(1)
 
     if len(sys.argv) > 2:
-        nb_iter = int(sys.argv[2])
+        nb_iters = [int(x) for x in sys.argv[2].split("+")]
     else:
-        nb_iter = 1
+        nb_iters = [1]
     
-    list_of_tasks = available_choices[sys.argv[1]]["function"]()
+    for nb_iter in nb_iters:
+        list_of_tasks = available_choices[sys.argv[1]]["function"]()
 
-    # Multiply the number of tasks in list_of_task by nb_iter
-    lot_len = len(list_of_tasks)
-    for _ in range(nb_iter - 1):
-        for i in range(lot_len):
-            list_of_tasks.append(list_of_tasks[i])
+        # Multiply the number of tasks in list_of_task by nb_iter
+        lot_len = len(list_of_tasks)
+        for _ in range(nb_iter - 1):
+            for i in range(lot_len):
+                list_of_tasks.append(list_of_tasks[i])
 
-    # Run the benchmark (the list_of_tasks will be shuffled)
-    run_benchmarks(list_of_tasks)
+        # Run the benchmark (the list_of_tasks will be shuffled)
+        run_benchmarks(list_of_tasks)
 
