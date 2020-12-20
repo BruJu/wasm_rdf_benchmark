@@ -47,26 +47,15 @@ FILES = [
 
 HEADER = "t_load,m_graph,m_graph_end,t_first,t_rest,t_second,t_second_rest"
 
-QUERIES = {
-    "POG": "POG",
-    "SG": "SG",
-    "PO": "PO",
-    "S": "S"
-}
+QUERIES = [ "S", "SG", "PO", "POG" ]
 
 def main():
     if len(sys.argv) != 4:
         print(sys.argv)
         print("usage: {} <task> <tool> <kind>".format(sys.argv[0]), file=sys.stderr)
-        print("  available tasks: {}".format(
-            ",".join(QUERIES)
-        ))
-        print("  available tools: {}".format(
-            ",".join(TOOLS)
-        ))
-        print("  available datasets: {}".format(
-            ",".join(KINDS)
-        ))
+        print("  available tasks: {}"   .format(",".join(QUERIES)))
+        print("  available tools: {}"   .format(",".join(TOOLS)  ))
+        print("  available datasets: {}".format(",".join(KINDS)  ))
         exit(1)
         
     args = sys.argv[1:]
@@ -100,6 +89,37 @@ def benchmark(task, tool, kind, nb_iter):
             list_of_tasks.append(t)
     
     run_benchmarks(list_of_tasks)
+
+def run_benchmarks(list_of_tasks):
+    random.shuffle(list_of_tasks)
+    csv = "csv/bench_{}.csv".format(
+        str(datetime.datetime.now())[:19].replace(' ', '-').replace(':', '-'),
+    )
+
+    file_exists = os.path.isfile(csv)
+
+    with open(csv, 'w+') as f:
+        try:
+            print("WRITING", csv, file=sys.stderr)
+            if not file_exists:
+                f.write("tool,dataset,pattern,size,{}\n".format(HEADER))
+                f.flush()
+
+            for task, tool, kind, filename, size in list_of_tasks:
+                one_benchmark(f, task, tool, kind, filename, size)
+
+        except KeyboardInterrupt:
+            sys.stdout.write("\r") # clear the '^C' that appears
+
+def one_benchmark(f, task, tool, kind, filename, size):
+    cmd = TOOLS[tool]
+    cmd = cmd.format(task=task, filename=filename, kind=kind)
+    res = subprocess.run(cmd, shell=True, check=True, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+    f.write("{},{},{},{},{}".format(tool, kind, task, size, res.stdout.decode('utf8')))
+    f.flush()
+    print("DONE", task, tool, kind, filename, file=sys.stderr)
+
+# =============================================================================
 
 def mass_benchmark():
     NB_ITER = 2
@@ -165,9 +185,8 @@ def paperESWC(NB_ITER):
 def paperESWC_barPlot(NB_ITER):
     list_of_tasks = []
     
-    
-    for task in ["S", "POG"]: # S, POG
-        for filename, size in [("./data/persondata_en_1M.ttl",  1_000_000)]:
+    for task in ["S", "POG"]:
+        for filename, size in [("./data/persondata_en_1M.ttl", 1_000_000)]:
             for _ in range(NB_ITER):
                 for kind in ["tree", "wasm_tree", "wrap_tree", "graphy", "wasm_tree_FI", "wasm_tree_FS", "wasm_tree_II"]:
                     if "rdfjsdataset" in KINDS[kind]:
@@ -201,44 +220,6 @@ def measure_tree(NB_ITER):
     run_benchmarks(list_of_tasks)
 
 
-def run_benchmarks(list_of_tasks):
-    random.shuffle(list_of_tasks)
-    csv = "csv/bench_{}.csv".format(
-        str(datetime.datetime.now())[:19].replace(' ', '-').replace(':', '-'),
-    )
-
-    file_exists = os.path.isfile(csv)
-
-    with open(csv, 'w+') as f:
-        try:
-            print("WRITING", csv, file=sys.stderr)
-            if not file_exists:
-                f.write("tool,dataset,pattern,size,{}\n".format(HEADER))
-                f.flush()
-
-            for task, tool, kind, filename, size in list_of_tasks:
-                one_benchmark(f, task, tool, kind, filename, size)
-
-        except KeyboardInterrupt:
-            sys.stdout.write("\r") # clear the '^C' that appears
-
-def one_benchmark(f, task, tool, kind, filename, size):
-    cmd = TOOLS[tool]
-    cmd = cmd.format(task=task, filename=filename, kind=kind)
-    res = subprocess.run(cmd, shell=True, check=True, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
-    f.write("{},{},{},{},{}".format(tool, kind, QUERIES[task], size, res.stdout.decode('utf8')))
-    f.flush()
-    print("DONE", task, tool, kind, filename, file=sys.stderr)
-
-#main()
-
-
-#mass_benchmark()
-
-#measure_javascript(20)
-#measure_tree(20)
-#exportation_dataset_impact(20)
-
 def store_or_dataset(NB_ITER):
 
     list_of_tasks = []
@@ -260,39 +241,21 @@ def oooh():
     NB_ITER = 20
     list_of_tasks = []
 
-    for size in range(5000, 100000, 5000):
-        for _ in range(NB_ITER):
+    for _ in range(NB_ITER):
+        for size in range(5000, 100000, 5000):
             t = ("POG", "rdfjsdataset", "wasm_tree", 'data/cpersondata_en_' + str(size) + ".ttl", size)
             list_of_tasks.append(t)
 
-
-    for task in QUERIES:
-        for kind in ["tree", "wasm_tree", "array", "graphy"]:
-            for filename, size in FILES:
-                for _ in range(NB_ITER):
+        for filename, size in FILES:
+            for task in QUERIES:
+                for kind in ["fast", "fast_array", "wrap_fast", "tree", "wasm_tree", "array", "graphy"]:
                     if "rdfjsdataset" in KINDS[kind]:
                         t = (task, "rdfjsdataset", kind, filename, size)
                         list_of_tasks.append(t)
-    
-    for task in QUERIES:
-        for kind in ["tree"]:
-            for filename, size in FILES:
-                for _ in range(NB_ITER):
+            
+                for kind in ["fast", "fast_array", "wrap_fast", "tree"]:
                     if "rust" in KINDS[kind]:
                         t = (task, "rust", kind, filename, size)
-                        list_of_tasks.append(t)
-    
-
-    for task in QUERIES:
-        for kind in ["fast", "fast_array", "wrap_fast"]:
-            for filename, size in FILES:
-                for _ in range(NB_ITER):
-                    if "rust" in KINDS[kind]:
-                        t = (task, "rust", kind, filename, size)
-                        list_of_tasks.append(t)
-                    
-                    if "rdfjsdataset" in KINDS[kind]:
-                        t = (task, "rdfjsdataset", kind, filename, size)
                         list_of_tasks.append(t)
     
     run_benchmarks(list_of_tasks)
@@ -316,9 +279,9 @@ def ooop():
     
     run_benchmarks(list_of_tasks)
 
-paperESWC(10)
 paperESWC(50)
+#paperESWC(50)
 
-#paperESWC_barPlot(20)
+paperESWC_barPlot(20)
 
 #store_or_dataset(10)
