@@ -10,6 +10,8 @@ This repository purpose is to benchmark the performances of :
 - [**WasmTree**, an RDF.JS implementation which mixes Rust and Javascript code](https://github.com/BruJu/WasmTreeDataset)
 - They are compared with [**Graphy**](https://www.npmjs.com/package/graphy) and [**n3.js**](https://www.npmjs.com/package/n3)
 
+> *Our measures for RDF.JS evaluation are in the [results](results/) folder and the plots in the [associated jupyter notebook](results/plot.ipynb).*
+
 ## How to reproduce the benchmarks
 
 - Node.JS, npm, rustc and cargo are required
@@ -35,15 +37,13 @@ This repository purpose is to benchmark the performances of :
 
 - Results will written be in csv format in `csv/load_bench_currentdate.csv`
 
-### SPARQL Queries
+### SPARQL Queries using BSBM
 
-https://gist.github.com/BruJu/919c1d3c10dfed21553e4a6e9f910b2a 
-
-(/!\\ The used version of Comunica was v1.13.1)
+[See the SPARQL dedicated section.](sparql) **(TODO)**
 
 
 ## License
 
-This repository uses the https://github.com/pchampin/sophia_benchmark infrastructure as a base, licensied under the MIT Licence.
+This repository uses the [sophia benchmark](https://github.com/pchampin/sophia_benchmark) infrastructure as a base, licensied under the MIT License.
 
-This repository itself is also licensed under the MIT Licence.
+This repository itself is also licensed under the MIT License.
