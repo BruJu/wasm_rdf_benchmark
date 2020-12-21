@@ -10,7 +10,11 @@ This repository purpose is to benchmark the performances of :
 - [**WasmTree**, an RDF.JS implementation which mixes Rust and Javascript code](https://github.com/BruJu/WasmTreeDataset)
 - They are compared with [**Graphy**](https://www.npmjs.com/package/graphy) and [**n3.js**](https://www.npmjs.com/package/n3)
 
-> *Our measures for RDF.JS evaluation are in the [results](results/) folder and the plots in the [associated jupyter notebook](results/plot.ipynb).*
+## Our measures
+
+Our measures for RDF.JS evaluation are in the [results](results/) folder and the plots in the [associated jupyter notebook](results/plot.ipynb).
+
+*Erratum: In the preprint article, the repartition bar plot (Figure 6) have a scale divided by 1024. It is corrected in the notebook.*
 
 ## How to reproduce the benchmarks
 
