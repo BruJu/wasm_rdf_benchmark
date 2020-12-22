@@ -1,3 +1,9 @@
 node_modules/
 bsbmtools-v0.2.zip
 package-lock.json
+
+bruju-wasm-tree-0.2.0.tgz
+bsbmtools-0.2/
+comunica/
+wasm_tree/
+

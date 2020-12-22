@@ -24,7 +24,7 @@ const http = require("http");
 const querystring = require("querystring");
 const url = require("url");
 const { exit } = require("process");
-const rdf = require("rdf");
+const factory = require("@graphy/core.data.factory");
 
 /**
  * An HTTP service that does exposes an oxigraph as a SPARQL endpoint.
@@ -192,7 +192,7 @@ class HttpServiceSparqlEndpoint {
                         let s = binding.get(b);
                         if (s == undefined)
                             continue;
-                        let quad = rdf.factory.fromTerm(binding.get(b));
+                        let quad = factory.fromTerm(binding.get(b));
 
                         switch (quad.termType) {
                             case "NamedNode":
@@ -241,14 +241,14 @@ class HttpServiceSparqlEndpoint {
                 let l = "";
 
                 for (let quad of result) {
-                    let pureQuad = rdf.factory.fromQuad(quad);
-                    l += pureQuad.subject.toCanonical()
-                      + " " + pureQuad.predicate.toCanonical()
-                      + " " + pureQuad.object.toCanonical();
+                    let pureQuad = factory.fromQuad(quad);
+                    l +=      pureQuad.subject.value
+                      + " " + pureQuad.predicate.value
+                      + " " + pureQuad.object.value;
                     if (pureQuad.graph.termType == "DefaultGraph") {
                         l += "\n.";
                     } else {
-                        l += " " + pureQuad.graph.toCanonical + "\n. ";
+                        l += " " + pureQuad.graph.value + "\n. ";
                     }
                     l += "\n";
                 }

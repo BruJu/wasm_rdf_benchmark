@@ -1,6 +1,8 @@
 {
   "dependencies": {
     "@graphy/content.ttl.read": "^4.3.3",
+    "@graphy/core.data.factory": "^4.3.3",
+    "negotiate": "^1.0.1",
     "oxigraph": "0.0.2"
   }
 }

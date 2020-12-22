@@ -2,9 +2,6 @@
 
 **This is section is in work in progress**
 
-- https://gist.github.com/BruJu/919c1d3c10dfed21553e4a6e9f910b2a 
-- The used version of Comunica was v1.13.1
-
 
 ## Required
 
@@ -29,3 +26,14 @@ sudo apt install yarn
 ```
 
 
+## How to
+
+- Download BSBM
+- Run `./install.sh`
+
+
+- In one terminal, start one of the enpoint, for example `./endpoint_comunica_wasmtree.sh`
+- In another terminal, run BSBM `./run_bsbm.sh`
+
+
+*About Oxigraph: * the format sent by Oxigraph is not understood by BSBM so the received number of quads is wrong. But we can see on OXigraph's console that quads are actually retrieved, and as we are more interested by speed than developping a proper SPARQL end point, we considered it was good enough for benchmarking purposes.
