@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "@graphy/content.ttl.read": "^4.3.3",
+    "oxigraph": "0.0.2"
+  }
+}
